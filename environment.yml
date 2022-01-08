@@ -1,0 +1,11 @@
+name: course-nr-env
+
+channels:
+  - conda-forge
+  - defaults
+
+dependencies:
+  - astropy
+  - numpy
+  - 'python > 3.8'
+  - scipy
