@@ -187,8 +187,8 @@ def calc_n(n: int, verbose: bool = False):
     return xp, sol
 
 
-def l2_norm(u, u_ex):
-    return numpy.sqrt(numpy.sum((u - u_ex) ** 2))
+def l2_norm(u, u_ex, h):
+    return numpy.sqrt(h * numpy.sum((u - u_ex) ** 2))
 
 
 def plot_mpl(xp, sol):
@@ -212,7 +212,7 @@ def main():
     # Test convergence
     ks = numpy.arange(1, 5, 1.0)
     results = [calc_n(int(10**k), verbose=True) for k in ks]
-    norms = numpy.array([l2_norm(sol, u_ex(xp)) for xp, sol in results])
+    norms = numpy.array([l2_norm(sol, u_ex(xp), h=xp[1] - xp[0]) for xp, sol in results])
 
     plot_convergence(ks, norms)
 

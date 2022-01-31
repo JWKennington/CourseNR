@@ -3,6 +3,7 @@
   <component name="NewModuleRootManager">
     <content url="file://$MODULE_DIR$/../CourseGR1" />
     <content url="file://$MODULE_DIR$" />
+    <content url="file://$MODULE_DIR$/../../utilities/pystein" />
     <orderEntry type="jdk" jdkName="Python 3.10 (course-nr-env)" jdkType="Python SDK" />
     <orderEntry type="sourceFolder" forTests="false" />
   </component>
