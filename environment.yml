@@ -6,8 +6,11 @@ channels:
 
 dependencies:
   - astropy
+  - notebook
   - numpy
+  - plotly
   - pytest
   - 'python > 3.8'
+  - python-kaleido
   - scipy
   - sympy
