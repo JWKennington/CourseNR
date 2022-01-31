@@ -14,6 +14,7 @@ The problem is then solved using the conjugate gradient method
 
 import matplotlib.pyplot as plt
 import numpy
+import plotly.graph_objects as go
 from scipy.sparse.linalg import cg, LinearOperator
 
 
@@ -205,16 +206,55 @@ def plot_convergence(ks, norms):
     plt.show()
 
 
+def plot_convergence_plotly(ks, norms, file: str = None):
+    fig = go.Figure()
+    fig.add_trace(go.Scatter(x=1/ks, y=-1/numpy.log10(norms), mode='lines', line=dict(color='blue', dash='solid')))
+    fig.add_trace(go.Scatter(x=1/ks, y=-1/numpy.log10(norms), mode='markers', marker=dict(color='black')))
+
+    fig.update_layout(
+        #     yaxis_range=[0,10],
+        #                   xaxis_range=[0,10],
+        width=500,
+        height=500,
+        showlegend=False,
+        title_text=r'$\text{Convergence of Heat Equation Solution}\quad \{u(x)\}_{N}$',
+        title_x=0.5,
+        xaxis_title=r'$1/ \log_{10} N$',
+        yaxis_title=r'$-1 / \log\, {\lVert \hat{u}(x) - u(x) \rVert}_2$')
+    fig.write_image('problem-5-convergence.pdf')
+
+
+def plot_plotly(xp, sol):
+    fig = go.Figure()
+
+    fig.add_trace(go.Scatter(x=xp, y=u_ex(xp), mode='lines', line=dict(color='blue', dash='solid'), name='Expected'))
+    fig.add_trace(go.Scatter(x=xp, y=sol, mode='lines', line=dict(color='black', dash='solid'), name='Computed'))
+
+    fig.update_layout(
+        #     yaxis_range=[0,10],
+        #                   xaxis_range=[0,10],
+        width=600,
+        height=400,
+        showlegend=True,
+        title_text=r'$\text{Solution of Heat Equation Solution}\quad N = 1000$',
+        title_x=0.5,
+        xaxis_title=r'$x \in (0, 1)$',
+        yaxis_title=r'$u(x)$')
+    fig.write_image('problem-5-solution.pdf')
+
+
 def main():
-    # xp, sol = calc_n(1000)
-    # plot_mpl(xp, sol)
+    xp, sol = calc_n(1000)
+    print('plotting soln')
+    plot_plotly(xp, sol)
 
     # Test convergence
     ks = numpy.arange(1, 5, 1.0)
     results = [calc_n(int(10**k), verbose=True) for k in ks]
     norms = numpy.array([l2_norm(sol, u_ex(xp), h=xp[1] - xp[0]) for xp, sol in results])
 
-    plot_convergence(ks, norms)
+    print('plotting conv')
+    plot_convergence_plotly(ks, norms)
 
 
 
