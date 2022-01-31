@@ -201,7 +201,7 @@ def plot_mpl(xp, sol):
 
 def plot_convergence(ks, norms):
     plt.figure()
-    plt.plot(ks, norms)
+    plt.plot(1/ks, -1/numpy.log10(norms))
     plt.show()
 
 
@@ -210,7 +210,7 @@ def main():
     # plot_mpl(xp, sol)
 
     # Test convergence
-    ks = numpy.arange(2, 6, 1.0)
+    ks = numpy.arange(1, 5, 1.0)
     results = [calc_n(int(10**k), verbose=True) for k in ks]
     norms = numpy.array([l2_norm(sol, u_ex(xp)) for xp, sol in results])
 
