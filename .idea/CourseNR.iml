@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <module type="PYTHON_MODULE" version="4">
   <component name="NewModuleRootManager">
-    <content url="file://$MODULE_DIR$/../CourseGR1" />
+    <content url="file://$MODULE_DIR$/../CourseGR2" />
     <content url="file://$MODULE_DIR$" />
     <content url="file://$MODULE_DIR$/../../utilities/pystein" />
     <orderEntry type="jdk" jdkName="Python 3.10 (course-nr-env)" jdkType="Python SDK" />
