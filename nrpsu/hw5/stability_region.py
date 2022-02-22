@@ -1,22 +1,32 @@
 # -*- coding: utf-8 -*-
 # %%
 import matplotlib.pyplot as plt
+import numpy
 import numpy as np
 
 
 def amplification_factor(A, b, z):
-    FIXME
+    lhs = (numpy.eye(N=A.shape[0]) - z * A)
+    lhs_inv = np.linalg.inv(lhs)
+    rhs = z * numpy.ones(shape=(A.shape[0],))
+    k_vec = numpy.matmul(lhs_inv, rhs)
+    y_1 = numpy.matmul(b.T, k_vec)
+    return numpy.sum(numpy.abs(y_1))
 
 
-def tabulate_amplification_factor(A, b, z1d):
-    FIXME
+def tabulate_amplification_factor(A, b, z_re_grid, z_im_grid):
+    @numpy.vectorize
+    def amp_vec(z_re, z_im):
+        return amplification_factor(A, b, z_re + z_im*1j)
+
+    return amp_vec(z_re_grid, z_im_grid)
 
 
 def plot_stability_region(A, b, zmax=5.0, nz=512):
     # Create a grid
     z1d = np.linspace(-zmax, zmax, nz)
     z_re, z_im = np.meshgrid(z1d, z1d, indexing='ij')
-    fac = tabulate_amplification_factor(A, b, z1d)
+    fac = tabulate_amplification_factor(A, b, z_re, z_im)
     fig = plt.figure()
     ax = fig.add_axes([0.15, 0.15, 0.95 - 0.15, 0.95 - 0.15])
     ax.set_xlabel(r"Re")
