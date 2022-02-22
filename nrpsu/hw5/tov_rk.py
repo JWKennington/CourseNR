@@ -4,12 +4,15 @@ Tolman-Oppenheimer-Volkoff This solves the TOV equations using a simple FD appro
 Code borrowed from NR course, modified for use in GR II
 """
 import collections
+import functools
 import types
 import typing
 
 import numpy
 from matplotlib import pyplot
 from scipy import integrate, optimize
+
+from nrpsu.hw5 import rk
 
 
 def scale_density(rho_bar: float, index: float, gas_const: float):
@@ -143,6 +146,26 @@ def integrate_scipy(density_rest: float, d_rad: float = 0.01, poly_index: float 
     return post_process(radii, res, d_rad, poly_index, poly_gas_const, solver=integrate_scipy)
 
 
+def integrate_rk(density_rest: float, d_rad: float = 0.01, poly_index: float = 1.0, poly_gas_const: float = 1.0,
+                 rad_max: float = 1.0, tol=1e-2, max_iters=5000):
+    pressure_cent = polytropic_pressure(density_rest, index=poly_index, gas_const=poly_gas_const)
+    state = State(mass=0.0, pressure=pressure_cent, phi=0.0).to_array()
+
+    def integrand(radius, state_arr):
+        state = State.from_array(state_arr)
+        density = polytropic_density(pressure=state.pressure, index=poly_index, gas_const=poly_gas_const)
+        dy = d_state_d_rad(radius=radius, state=state, density=density)
+        return dy
+
+    radii, res = rk.runge_kutta(tableau=rk.CommonTableau.DormandPrince, func=integrand,
+                                y0=state, t_max=rad_max, dt=d_rad, tol=tol, t0=d_rad, max_iters=max_iters)
+
+    radii = numpy.array(radii)
+    res = numpy.array(res)
+
+    return post_process(radii, res, d_rad, poly_index, poly_gas_const, solver=integrate_scipy)
+
+
 def post_process(radii: numpy.array, raw_result: numpy.ndarray, d_rad: float = 0.01, poly_index: float = 1.0, poly_gas_const: float = 1.0,
                  solver: types.FunctionType = integrate_manual) -> Solution:
     # trim at first NaN pressure
@@ -162,10 +185,11 @@ def post_process(radii: numpy.array, raw_result: numpy.ndarray, d_rad: float = 0
         radii, masses, pressures, phis = radii[:-1], masses[:-1], pressures[:-1], phis[:-1]
 
     elif solver == integrate_scipy:
+
         idx_first_nan = numpy.where(numpy.isnan(raw_result[:, 1]))[0][0]
 
-        radii = radii[:idx_first_nan-1]
-        result = raw_result[:idx_first_nan-1, :]
+        radii = radii[:idx_first_nan - 1]
+        result = raw_result[:idx_first_nan - 1, :]
 
         masses, pressures, phis = result[:, 0], result[:, 1], result[:, 2]
         surface_radius = radii[-1]
@@ -173,12 +197,16 @@ def post_process(radii: numpy.array, raw_result: numpy.ndarray, d_rad: float = 0
     else:
         raise ValueError('Unknown solver')
 
+    # trim
+    trim_idx = 1
+
     # Compute baryonic mass
-    rho0 = polytropic_density_rest(pressure=pressures[2:], index=poly_index, gas_const=poly_gas_const)
-    _radii = radii[2:]
-    _masses = masses[2:]
+    rho0 = polytropic_density_rest(pressure=pressures[trim_idx:], index=poly_index, gas_const=poly_gas_const)
+    _radii = radii[trim_idx:]
+    _masses = masses[trim_idx:]
     vol = 4 * numpy.pi * _radii ** 2 / numpy.sqrt(1 - 2 * _masses / _radii)
-    rest_mass = numpy.sum(rho0 * vol * d_rad)
+    d_rad_vec = radii[1:] - radii[:-1]
+    rest_mass = numpy.sum(rho0 * vol * d_rad_vec)
 
     return Solution(radius=radii, mass=masses, pressure=pressures, phi=phis, surface_radius=surface_radius, interior_mass=interior_mass, rest_mass=rest_mass)
 
@@ -220,7 +248,8 @@ def generate_plot(index: float, gas_const: float, d_rad: float, densities: numpy
     # seq = TOVSequence(eos)
     # seq.generate(opt["rho0"], opt["dr"])
 
-    seq = SolutionSequence.from_densities(densities, d_rad=d_rad, poly_index=index, poly_gas_const=gas_const, rad_max=rad_max, solver=solver)
+    seq = SolutionSequence.from_densities(densities, d_rad=d_rad, poly_index=index,
+                                          poly_gas_const=gas_const, rad_max=rad_max, solver=solver)
 
     fig = pyplot.figure()
     ax = fig.add_axes([0.15, 0.15, 0.95 - 0.15, 0.95 - 0.15])
@@ -245,8 +274,13 @@ if __name__ == '__main__':
     densities = numpy.linspace(0.01, 1.5, 100)
     d_rad = 0.001
     rad_max = 2.0
-    solver = integrate_manual
+    # solver = integrate_manual
     # solver = integrate_scipy
+
+    tol = 1e-3
+    Nmax = int(1e4)
+    solver = functools.partial(integrate_rk, tol=tol, max_iters=Nmax)
+
     n = 1.0
     K = 1.0
     generate_plot(index=n, gas_const=K, d_rad=d_rad, densities=densities, solver=solver, rad_max=rad_max)
