@@ -10,7 +10,7 @@ def amplification_factor(A, b, z):
     lhs_inv = np.linalg.inv(lhs)
     rhs = z * numpy.ones(shape=(A.shape[0],))
     k_vec = numpy.matmul(lhs_inv, rhs)
-    y_1 = numpy.matmul(b.T, k_vec)
+    y_1 = 1.0 + numpy.matmul(b.T, k_vec)
     return numpy.sum(numpy.abs(y_1))
 
 
