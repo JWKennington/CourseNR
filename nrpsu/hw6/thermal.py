@@ -3,7 +3,7 @@ from math import pi, sqrt
 import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib.animation import FuncAnimation
-from scipy.sparse.linalg import LinearOperator
+from scipy.sparse.linalg import LinearOperator, cg
 
 
 class LaplaceOperator(LinearOperator):
@@ -36,6 +36,8 @@ class LaplaceOperator(LinearOperator):
         super().__init__(xic.dtype, (xic.shape[0], xic.shape[0]))
         self.xic = xic
         self.xif = xif
+        self.hic = self.xic[1] - self.xic[0]
+        self.hif = self.xif[1] - self.xif[0]
         self.jac = jac
 
     def _matvec(self, u):
@@ -49,7 +51,13 @@ class LaplaceOperator(LinearOperator):
         v : numpy array
             A*u
         """
-        FIXME
+        F = np.zeros(u.size + 1)
+
+        u_x = (u[1:] - u[:-1]) / self.hic
+        F[1:-1] = self.jac(self.xif[1:-1]) * u_x
+
+        inner_x = (F[1:] - F[:-1]) / self.hif
+        return self.jac(self.xic) * inner_x
 
 
 class CrankNicholsonOperator(LinearOperator):
@@ -107,7 +115,7 @@ class ThermalWaveSolver:
         self.xic = 0.5 * (self.xif[1:] + self.xif[:-1])
         self.xc = np.tan(pi * self.xic / 2)
         # Jacobian
-        self.jac = FIXME
+        self.jac = lambda xi: 2 * np.cos(np.pi * xi / 2) ** 2 / np.pi
         # Discrete Laplace operator
         self.A = LaplaceOperator(self.xic, self.xif, self.jac)
 
@@ -199,7 +207,7 @@ class ThermalWaveSolver:
             Integral of U on the real line.
         """
         # Jacobian |dx/dxi|
-        vol = FIXME
+        vol = np.pi / (2 * np.cos(np.pi / 2 * self.xic) ** 2)
         return np.sum(U * vol * np.diff(self.xif))
 
     def step(self, U, dt, theta=0.5, opt={"tol": 1e-8}):
@@ -224,7 +232,9 @@ class ThermalWaveSolver:
         ierr : int
             Error code from lingalg.cg
         """
-        FIXME
+        rhs = dt * (1 - theta) * self.A.matvec(U) + U
+        lhs = CrankNicholsonOperator(A=self.A, mu=-dt * theta)
+        return cg(A=lhs, b=rhs, **opt)
 
     def solve(self, tmin=0.1, dt=0.05, tmax=1.1, outevery=0, theta=0.5, opt=None):
         """
@@ -304,3 +314,7 @@ def main():
     resu = np.array(resu)
 
     plot(resu, err)
+
+
+if __name__ == '__main__':
+    main()
